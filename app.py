@@ -343,7 +343,6 @@ def _spline_fechada(pontos_norm, amostras_por_trecho=40):
     max_xy = curva.max(axis=0)
     span_xy = np.maximum(max_xy - min_xy, 1e-6)
 
-    # Área bem alargada para acomodar curvas longas (5-6 km) com respiro
     alvo_min = np.array([65.0, 310.0])
     alvo_max = np.array([1015.0, 1580.0])
     alvo_span = alvo_max - alvo_min
@@ -424,31 +423,3 @@ def gerar_frames(
         draw = ImageDraw.Draw(img)
 
         draw.rectangle([48, 52, LARGURA - 48, 225], fill=(22, 28, 40), outline=(65, 78, 102), width=2)
-        draw.text((76, 72), circuito_nome.upper(), fill=(255, 255, 255), font=fonte_titulo)
-        volta_atual = min(voltas_simuladas, max(1, int(progresso * voltas_simuladas) + 1))
-        draw.text(
-            (76, 138),
-            f"{info_circuito['pista']}  |  Clima: {clima}  |  Volta {volta_atual}/{voltas_simuladas}",
-            fill=(185, 198, 220),
-            font=fonte_sub,
-        )
-
-        # Zebras alternadas proporcionais ao traçado alargado
-        for i in range(0, n_pts, 8):
-            x, y = lista_pts[i]
-            cor_zebra = (225, 45, 45) if (i // 8) % 2 == 0 else (240, 240, 240)
-            draw.ellipse([x - 24, y - 24, x + 24, y + 24], fill=cor_zebra)
-
-        # Asfalto da pista com largura equilibrada para curvas sinuosas
-        draw.polygon(lista_pts, outline=cor_asfalto)
-        draw.line(lista_pts + [lista_pts[0]], fill=cor_asfalto, width=36)
-        draw.line(lista_pts + [lista_pts[0]], fill=(72, 78, 90), width=3)
-
-        # Linha de largada / chegada
-        x0, y0 = lista_pts[0]
-        x1, y1 = lista_pts[1]
-        dx, dy = x1 - x0, y1 - y0
-        norm = math.hypot(dx, dy) or 1.0
-        nx, ny = -dy / norm, dx / norm
-        draw.line(
-            [(x0 - nx * 22
