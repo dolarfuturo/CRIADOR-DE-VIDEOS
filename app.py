@@ -1,6 +1,7 @@
 import math
 import os
 import tempfile
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
@@ -31,8 +32,10 @@ CIRCUITOS_2026 = {
         "pais": "China",
         "voltas_padrao": 56,
         "pontos": [
-            (0.16, 0.76), (0.52, 0.76), (0.68, 0.52), (0.35, 0.24),
-            (0.62, 0.22), (0.86, 0.42), (0.78, 0.68), (0.40, 0.64),
+            (0.18, 0.78), (0.56, 0.78), (0.66, 0.68), (0.62, 0.54),
+            (0.48, 0.50), (0.38, 0.58), (0.44, 0.42), (0.68, 0.34),
+            (0.84, 0.24), (0.76, 0.16), (0.42, 0.18), (0.16, 0.24),
+            (0.14, 0.44), (0.24, 0.56),
         ],
     },
     "Japão (Suzuka)": {
@@ -261,6 +264,51 @@ PILOTOS_HAAS_OPCOES = {
 }
 
 
+def extrair_pontos_da_imagem(arquivo_imagem, num_pontos_controle=48):
+    """Lê uma imagem de circuito enviada pelo usuário e extrai o contorno fechado normalizado."""
+    pil_img = Image.open(arquivo_imagem).convert("RGB")
+    img_np = np.array(pil_img)
+    cinza = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+    cinza = cv2.GaussianBlur(cinza, (5, 5), 0)
+
+    # Detecta automaticamente se o fundo é claro ou escuro pela borda da imagem
+    bordas = np.concatenate([cinza[0, :], cinza[-1, :], cinza[:, 0], cinza[:, -1]])
+    fundo_claro = np.mean(bordas) > 127
+
+    tipo_thresh = cv2.THRESH_BINARY_INV if fundo_claro else cv2.THRESH_BINARY
+    _, mascara = cv2.threshold(cinza, 0, 255, tipo_thresh + cv2.THRESH_OTSU)
+
+    # Fecha pequenas falhas na linha da pista
+    kernel = np.ones((5, 5), np.uint8)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_CLOSE, kernel)
+
+    contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if not contornos:
+        return None
+
+    maior_contorno = max(contornos, key=cv2.contourArea)
+    if cv2.contourArea(maior_contorno) < 200:
+        return None
+
+    pts = maior_contorno.reshape(-1, 2).astype(np.float64)
+    h, w = cinza.shape
+    pts[:, 0] /= max(w, 1)
+    pts[:, 1] /= max(h, 1)
+
+    # Reamostra ao longo do perímetro para suavizar
+    segmentos = np.linalg.norm(np.diff(pts, axis=0, append=pts[:1]), axis=1)
+    dist_acum = np.concatenate([[0.0], np.cumsum(segmentos)])
+    perimetro = dist_acum[-1]
+    if perimetro <= 0:
+        return None
+
+    alvos = np.linspace(0.0, perimetro, num_pontos_controle, endpoint=False)
+    xs = np.interp(alvos, dist_acum, np.append(pts[:, 0], pts[0, 0]))
+    ys = np.interp(alvos, dist_acum, np.append(pts[:, 1], pts[0, 1]))
+
+    return list(zip(xs.tolist(), ys.tolist()))
+
+
 def montar_grid_22(opcao_haas: str):
     grid = [dict(p) for p in PILOTOS_BASE_2026]
     grid.extend(dict(p) for p in PILOTOS_HAAS_OPCOES[opcao_haas])
@@ -283,7 +331,6 @@ def _spline_fechada(pontos_norm, amostras_por_trecho=45):
             t2 = t * t
             t3 = t2 * t
 
-            # Catmull-Rom fechado para curvas suaves sem quebras
             pos = 0.5 * (
                 (2.0 * p1)
                 + (-p0 + p2) * t
@@ -294,7 +341,6 @@ def _spline_fechada(pontos_norm, amostras_por_trecho=45):
 
     curva = np.asarray(curva, dtype=np.float64)
 
-    # Normaliza com margem para caber na área de pista (x: 110..970, y: 420..1460)
     min_xy = curva.min(axis=0)
     max_xy = curva.max(axis=0)
     span_xy = np.maximum(max_xy - min_xy, 1e-6)
@@ -345,14 +391,14 @@ def gerar_frames(
     clima: str,
     vencedor_sigla: str,
 ):
-    curva_bruta = _spline_fechada(info_circuito["pontos"], amostras_por_trecho=40)
+    amostras = 15 if len(info_circuito["pontos"]) > 20 else 40
+    curva_bruta = _spline_fechada(info_circuito["pontos"], amostras_por_trecho=amostras)
     pista_pts = _reamostrar_pista(curva_bruta, num_pontos=600)
     n_pts = len(pista_pts)
 
     total_frames = max(1, int(duracao_seg * fps))
     num_carros = len(grid)
 
-    # Ritmo base e variação sutil por carro, favorecendo o vencedor escolhido
     velocidades = []
     for idx, piloto in enumerate(grid):
         base = 1.0 + (num_carros - idx) * 0.0025 + ((idx * 7) % 5 - 2) * 0.0012
@@ -378,7 +424,6 @@ def gerar_frames(
         img = Image.new("RGB", (LARGURA, ALTURA), cor_fundo)
         draw = ImageDraw.Draw(img)
 
-        # Cabeçalho
         draw.rectangle([48, 52, LARGURA - 48, 225], fill=(22, 28, 40), outline=(65, 78, 102), width=2)
         draw.text((76, 72), circuito_nome.upper(), fill=(255, 255, 255), font=fonte_titulo)
         volta_atual = min(voltas_simuladas, max(1, int(progresso * voltas_simuladas) + 1))
@@ -389,18 +434,15 @@ def gerar_frames(
             font=fonte_sub,
         )
 
-        # Zebras alternadas na borda externa
         for i in range(0, n_pts, 6):
             x, y = lista_pts[i]
             cor_zebra = (225, 45, 45) if (i // 6) % 2 == 0 else (240, 240, 240)
             draw.ellipse([x - 32, y - 32, x + 32, y + 32], fill=cor_zebra)
 
-        # Asfalto da pista
         draw.polygon(lista_pts, outline=cor_asfalto)
         draw.line(lista_pts + [lista_pts[0]], fill=cor_asfalto, width=46)
         draw.line(lista_pts + [lista_pts[0]], fill=(72, 78, 90), width=4)
 
-        # Linha de largada / chegada
         x0, y0 = lista_pts[0]
         x1, y1 = lista_pts[1]
         dx, dy = x1 - x0, y1 - y0
@@ -412,15 +454,12 @@ def gerar_frames(
             width=8,
         )
 
-        # Posição de cada carro ao longo do traçado
         posicoes_carros = []
         for idx, piloto in enumerate(grid):
-            # Largada no grid e avanço ao longo das voltas
             offset_grid = (num_carros - idx) * 4.5
             distancia_total = (progresso * voltas_simuladas * n_pts * velocidades[idx]) - offset_grid
             indice_pista = int(distancia_total) % n_pts
 
-            # Pequeno deslocamento lateral para evitar sobreposição exata
             lateral = ((idx % 3) - 1) * 7.5
             px, py = lista_pts[indice_pista]
             next_px, next_py = lista_pts[(indice_pista + 1) % n_pts]
@@ -431,13 +470,11 @@ def gerar_frames(
 
             posicoes_carros.append((distancia_total, idx, piloto, cx, cy))
 
-        # Desenha carros
         for _, _, piloto, cx, cy in posicoes_carros:
             r = 13
             draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=piloto["cor"], outline=(255, 255, 255), width=2)
             draw.text((cx + 15, cy - 11), piloto["sigla"], fill=(255, 255, 255), font=fonte_carro)
 
-        # Ranking ao vivo na parte inferior
         ranking = sorted(posicoes_carros, key=lambda item: item[0], reverse=True)
         draw.rectangle([48, 1510, LARGURA - 48, 1865], fill=(22, 28, 40), outline=(65, 78, 102), width=2)
         draw.text((76, 1528), "TOP 6 NA PISTA", fill=(255, 215, 64), font=fonte_top)
@@ -464,7 +501,24 @@ st.title("Gerador de Corridas F1 2D (MP4)")
 st.caption("Temporada 2026 • 23 circuitos • 22 carros • Renderização vertical 1080x1920")
 
 circuito_nome = st.selectbox("Circuito", list(CIRCUITOS_2026.keys()))
-info_circuito = CIRCUITOS_2026[circuito_nome]
+info_circuito = dict(CIRCUITOS_2026[circuito_nome])
+
+# Local para enviar a imagem do circuito e extrair o traçado automaticamente
+imagem_circuito = st.file_uploader(
+    "Ou envie uma imagem do circuito (PNG/JPG) para traçar automaticamente",
+    type=["png", "jpg", "jpeg"],
+)
+
+if imagem_circuito is not None:
+    pontos_extraidos = extrair_pontos_da_imagem(imagem_circuito)
+    if pontos_extraidos:
+        nome_custom = st.text_input("Nome do circuito enviado", value=circuito_nome)
+        circuito_nome = nome_custom.strip() or circuito_nome
+        info_circuito["pontos"] = pontos_extraidos
+        info_circuito["pista"] = "Traçado extraído da imagem"
+        st.success("Traçado lido da imagem com sucesso!")
+    else:
+        st.error("Não foi possível detectar o contorno fechado da pista nessa imagem. Tente uma imagem mais limpa.")
 
 opcao_haas = st.selectbox("Dupla da Haas", list(PILOTOS_HAAS_OPCOES.keys()))
 grid_22 = montar_grid_22(opcao_haas)
