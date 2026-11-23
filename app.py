@@ -1,7 +1,6 @@
 import math
 import os
 import tempfile
-import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
@@ -12,388 +11,10 @@ except ImportError:
     from moviepy.editor import ImageSequenceClip
 
 
-st.set_page_config(page_title="Simulador F1 2D MP4", layout="centered")
+st.set_page_config(page_title="Simulador F1 2D Dinâmico (MP4)", layout="centered")
 
-LARGURA = 1080
-ALTURA = 1920
-
-CIRCUITOS_2026 = {
-    "Austrália (Melbourne)": {
-        "pista": "Albert Park",
-        "pais": "Austrália",
-        "voltas_padrao": 58,
-        "pontos": [
-            (0.14, 0.82), (0.62, 0.82), (0.90, 0.64), (0.86, 0.30),
-            (0.56, 0.16), (0.38, 0.36), (0.20, 0.24), (0.10, 0.52),
-        ],
-    },
-    "China (Xangai)": {
-        "pista": "Circuito Internacional de Xangai",
-        "pais": "China",
-        "voltas_padrao": 56,
-        "pontos": [
-            (0.14, 0.82), (0.64, 0.82), (0.74, 0.68), (0.66, 0.52),
-            (0.46, 0.48), (0.34, 0.60), (0.42, 0.38), (0.74, 0.28),
-            (0.90, 0.18), (0.76, 0.12), (0.36, 0.14), (0.12, 0.22),
-            (0.10, 0.46), (0.22, 0.60),
-        ],
-    },
-    "Japão (Suzuka)": {
-        "pista": "Circuito de Suzuka",
-        "pais": "Japão",
-        "voltas_padrao": 53,
-        "pontos": [
-            (0.12, 0.78), (0.60, 0.74), (0.78, 0.42), (0.48, 0.18),
-            (0.22, 0.30), (0.46, 0.52), (0.90, 0.44), (0.84, 0.80),
-        ],
-    },
-    "Miami": {
-        "pista": "Autódromo Internacional de Miami",
-        "pais": "Estados Unidos",
-        "voltas_padrao": 57,
-        "pontos": [
-            (0.12, 0.84), (0.82, 0.84), (0.92, 0.52), (0.60, 0.42),
-            (0.82, 0.20), (0.30, 0.16), (0.14, 0.44), (0.38, 0.64),
-        ],
-    },
-    "Canadá (Montreal)": {
-        "pista": "Circuito Gilles Villeneuve",
-        "pais": "Canadá",
-        "voltas_padrao": 70,
-        "pontos": [
-            (0.08, 0.68), (0.92, 0.68), (0.88, 0.32), (0.50, 0.24),
-            (0.30, 0.44), (0.10, 0.34),
-        ],
-    },
-    "Mônaco": {
-        "pista": "Circuito de Mônaco",
-        "pais": "Mônaco",
-        "voltas_padrao": 78,
-        "pontos": [
-            (0.18, 0.82), (0.84, 0.82), (0.90, 0.50), (0.62, 0.18),
-            (0.44, 0.40), (0.22, 0.16), (0.10, 0.46),
-        ],
-    },
-    "Espanha (Barcelona-Catalunha)": {
-        "pista": "Circuito de Barcelona-Catalunha",
-        "pais": "Espanha",
-        "voltas_padrao": 66,
-        "pontos": [
-            (0.12, 0.80), (0.88, 0.80), (0.92, 0.42), (0.62, 0.18),
-            (0.28, 0.20), (0.14, 0.44), (0.46, 0.56), (0.18, 0.64),
-        ],
-    },
-    "Áustria (Red Bull Ring)": {
-        "pista": "Red Bull Ring",
-        "pais": "Áustria",
-        "voltas_padrao": 71,
-        "pontos": [
-            (0.12, 0.82), (0.90, 0.78), (0.72, 0.28), (0.32, 0.18),
-            (0.16, 0.50),
-        ],
-    },
-    "Grã-Bretanha (Silverstone)": {
-        "pista": "Circuito de Silverstone",
-        "pais": "Reino Unido",
-        "voltas_padrao": 52,
-        "pontos": [
-            (0.12, 0.78), (0.74, 0.78), (0.92, 0.48), (0.62, 0.18),
-            (0.28, 0.22), (0.54, 0.46), (0.18, 0.54),
-        ],
-    },
-    "Bélgica (Spa-Francorchamps)": {
-        "pista": "Circuito de Spa-Francorchamps",
-        "pais": "Bélgica",
-        "voltas_padrao": 44,
-        "pontos": [
-            (0.12, 0.82), (0.48, 0.62), (0.32, 0.24), (0.76, 0.14),
-            (0.92, 0.46), (0.66, 0.80), (0.32, 0.70),
-        ],
-    },
-    "Hungria": {
-        "pista": "Hungaroring",
-        "pais": "Hungria",
-        "voltas_padrao": 70,
-        "pontos": [
-            (0.14, 0.82), (0.82, 0.82), (0.92, 0.48), (0.64, 0.18),
-            (0.30, 0.22), (0.46, 0.54), (0.16, 0.54),
-        ],
-    },
-    "Países Baixos (Zandvoort)": {
-        "pista": "Circuito de Zandvoort",
-        "pais": "Países Baixos",
-        "voltas_padrao": 72,
-        "pontos": [
-            (0.12, 0.80), (0.84, 0.78), (0.92, 0.40), (0.56, 0.16),
-            (0.20, 0.26), (0.44, 0.52), (0.14, 0.58),
-        ],
-    },
-    "Itália (Monza)": {
-        "pista": "Circuito de Monza",
-        "pais": "Itália",
-        "voltas_padrao": 53,
-        "pontos": [
-            (0.08, 0.72), (0.92, 0.72), (0.88, 0.28), (0.44, 0.28),
-            (0.28, 0.50), (0.10, 0.44),
-        ],
-    },
-    "Espanha (Madri - IFEMA)": {
-        "pista": "Circuito de Madring (IFEMA)",
-        "pais": "Espanha",
-        "voltas_padrao": 57,
-        "pontos": [
-            (0.12, 0.82), (0.88, 0.82), (0.92, 0.42), (0.58, 0.16),
-            (0.32, 0.28), (0.52, 0.54), (0.16, 0.56),
-        ],
-    },
-    "Azerbaijão (Baku)": {
-        "pista": "Circuito Urbano de Baku",
-        "pais": "Azerbaijão",
-        "voltas_padrao": 51,
-        "pontos": [
-            (0.10, 0.82), (0.92, 0.82), (0.88, 0.24), (0.56, 0.16),
-            (0.40, 0.40), (0.14, 0.36),
-        ],
-    },
-    "Barém (Sepang - Malásia)": {
-        "pista": "Circuito Internacional de Sepang",
-        "pais": "Malásia",
-        "voltas_padrao": 56,
-        "pontos": [
-            (0.12, 0.82), (0.88, 0.80), (0.92, 0.36), (0.56, 0.16),
-            (0.22, 0.24), (0.48, 0.52), (0.16, 0.56),
-        ],
-    },
-    "Singapura": {
-        "pista": "Circuito Urbano de Marina Bay",
-        "pais": "Singapura",
-        "voltas_padrao": 62,
-        "pontos": [
-            (0.14, 0.82), (0.86, 0.82), (0.92, 0.46), (0.64, 0.18),
-            (0.34, 0.20), (0.48, 0.48), (0.16, 0.54),
-        ],
-    },
-    "Estados Unidos (Austin)": {
-        "pista": "Circuito das Américas",
-        "pais": "Estados Unidos",
-        "voltas_padrao": 56,
-        "pontos": [
-            (0.12, 0.82), (0.84, 0.80), (0.90, 0.36), (0.54, 0.16),
-            (0.24, 0.28), (0.50, 0.54), (0.16, 0.58),
-        ],
-    },
-    "México": {
-        "pista": "Autódromo Hermanos Rodríguez",
-        "pais": "México",
-        "voltas_padrao": 71,
-        "pontos": [
-            (0.10, 0.78), (0.92, 0.78), (0.88, 0.28), (0.52, 0.18),
-            (0.24, 0.32), (0.46, 0.54), (0.14, 0.54),
-        ],
-    },
-    "Brasil (Interlagos)": {
-        "pista": "Autódromo José Carlos Pace",
-        "pais": "Brasil",
-        "voltas_padrao": 71,
-        "pontos": [
-            (0.16, 0.84), (0.76, 0.84), (0.86, 0.70), (0.72, 0.58),
-            (0.82, 0.42), (0.74, 0.24), (0.54, 0.16), (0.40, 0.28),
-            (0.26, 0.20), (0.14, 0.34), (0.16, 0.58), (0.16, 0.74),
-        ],
-    },
-    "Las Vegas": {
-        "pista": "Circuito Urbano de Las Vegas",
-        "pais": "Estados Unidos",
-        "voltas_padrao": 50,
-        "pontos": [
-            (0.14, 0.88), (0.88, 0.88), (0.88, 0.14), (0.32, 0.14),
-            (0.32, 0.54), (0.14, 0.54),
-        ],
-    },
-    "Catar": {
-        "pista": "Circuito Internacional de Lusail",
-        "pais": "Catar",
-        "voltas_padrao": 57,
-        "pontos": [
-            (0.12, 0.82), (0.90, 0.82), (0.92, 0.38), (0.58, 0.16),
-            (0.22, 0.22), (0.44, 0.52), (0.16, 0.56),
-        ],
-    },
-    "Abu Dhabi": {
-        "pista": "Circuito de Yas Marina",
-        "pais": "Emirados Árabes Unidos",
-        "voltas_padrao": 58,
-        "pontos": [
-            (0.12, 0.82), (0.88, 0.82), (0.92, 0.42), (0.58, 0.16),
-            (0.26, 0.24), (0.48, 0.54), (0.16, 0.56),
-        ],
-    },
-}
-
-PILOTOS_BASE_2026 = [
-    {"sigla": "NOR", "nome": "Lando Norris", "equipe": "McLaren", "cor": "#FF8000"},
-    {"sigla": "PIA", "nome": "Oscar Piastri", "equipe": "McLaren", "cor": "#FF8000"},
-    {"sigla": "LEC", "nome": "Charles Leclerc", "equipe": "Ferrari", "cor": "#E8002D"},
-    {"sigla": "HAM", "nome": "Lewis Hamilton", "equipe": "Ferrari", "cor": "#E8002D"},
-    {"sigla": "RUS", "nome": "George Russell", "equipe": "Mercedes", "cor": "#27F4D2"},
-    {"sigla": "ANT", "nome": "Andrea Kimi Antonelli", "equipe": "Mercedes", "cor": "#27F4D2"},
-    {"sigla": "VER", "nome": "Max Verstappen", "equipe": "Red Bull Racing", "cor": "#3671C6"},
-    {"sigla": "HAD", "nome": "Isack Hadjar", "equipe": "Red Bull Racing", "cor": "#3671C6"},
-    {"sigla": "BOR", "nome": "Gabriel Bortoleto", "equipe": "Audi", "cor": "#F50537"},
-    {"sigla": "HUL", "nome": "Nico Hülkenberg", "equipe": "Audi", "cor": "#F50537"},
-    {"sigla": "ALO", "nome": "Fernando Alonso", "equipe": "Aston Martin", "cor": "#229971"},
-    {"sigla": "STR", "nome": "Lance Stroll", "equipe": "Aston Martin", "cor": "#229971"},
-    {"sigla": "ALB", "nome": "Alexander Albon", "equipe": "Williams", "cor": "#64C4FF"},
-    {"sigla": "SAI", "nome": "Carlos Sainz", "equipe": "Williams", "cor": "#64C4FF"},
-    {"sigla": "GAS", "nome": "Pierre Gasly", "equipe": "Alpine", "cor": "#FF87BC"},
-    {"sigla": "COL", "nome": "Franco Colapinto", "equipe": "Alpine", "cor": "#FF87BC"},
-    {"sigla": "LAW", "nome": "Liam Lawson", "equipe": "Racing Bulls", "cor": "#6692FF"},
-    {"sigla": "LIN", "nome": "Arvid Lindblad", "equipe": "Racing Bulls", "cor": "#6692FF"},
-    {"sigla": "PER", "nome": "Sergio Pérez", "equipe": "Cadillac", "cor": "#D4AF37"},
-    {"sigla": "BOT", "nome": "Valtteri Bottas", "equipe": "Cadillac", "cor": "#D4AF37"},
-]
-
-PILOTOS_HAAS_OPCOES = {
-    "Bearman + Rafael Câmara": [
-        {"sigla": "BEA", "nome": "Oliver Bearman", "equipe": "Haas", "cor": "#B6BABD"},
-        {"sigla": "CAM", "nome": "Rafael Câmara", "equipe": "Haas", "cor": "#B6BABD"},
-    ],
-    "Ocon + Bearman": [
-        {"sigla": "OCO", "nome": "Esteban Ocon", "equipe": "Haas", "cor": "#B6BABD"},
-        {"sigla": "BEA", "nome": "Oliver Bearman", "equipe": "Haas", "cor": "#B6BABD"},
-    ],
-}
-
-
-def extrair_pontos_da_imagem(arquivo_imagem, num_pontos_controle=48):
-    pil_img = Image.open(arquivo_imagem).convert("RGB")
-    img_np = np.array(pil_img)
-    cinza = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-    cinza = cv2.GaussianBlur(cinza, (5, 5), 0)
-
-    bordas = np.concatenate([cinza[0, :], cinza[-1, :], cinza[:, 0], cinza[:, -1]])
-    fundo_claro = np.mean(bordas) > 127
-
-    tipo_thresh = cv2.THRESH_BINARY_INV if fundo_claro else cv2.THRESH_BINARY
-    _, mascara = cv2.threshold(cinza, 0, 255, tipo_thresh + cv2.THRESH_OTSU)
-
-    kernel = np.ones((5, 5), np.uint8)
-    mascara = cv2.morphologyEx(mascara, cv2.MORPH_CLOSE, kernel)
-
-    contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    if not contornos:
-        return None
-
-    maior_contorno = max(contornos, key=cv2.contourArea)
-    if cv2.contourArea(maior_contorno) < 200:
-        return None
-
-    pts = maior_contorno.reshape(-1, 2).astype(np.float64)
-    h, w = cinza.shape
-    pts[:, 0] /= max(w, 1)
-    pts[:, 1] /= max(h, 1)
-
-    segmentos = np.linalg.norm(np.diff(pts, axis=0, append=pts[:1]), axis=1)
-    dist_acum = np.concatenate([[0.0], np.cumsum(segmentos)])
-    perimetro = dist_acum[-1]
-    if perimetro <= 0:
-        return None
-
-    alvos = np.linspace(0.0, perimetro, num_pontos_controle, endpoint=False)
-    xs = np.interp(alvos, dist_acum, np.append(pts[:, 0], pts[0, 0]))
-    ys = np.interp(alvos, dist_acum, np.append(pts[:, 1], pts[0, 1]))
-
-    return list(zip(xs.tolist(), ys.tolist()))
-
-
-def montar_grid_22(opcao_haas: str):
-    grid = [dict(p) for p in PILOTOS_BASE_2026]
-    grid.extend(dict(p) for p in PILOTOS_HAAS_OPCOES[opcao_haas])
-    return grid
-
-
-def _spline_fechada(pontos_norm, amostras_por_trecho=40):
-    pts = np.asarray(pontos_norm, dtype=np.float64)
-    n = len(pts)
-    curva = []
-
-    for i in range(n):
-        p0 = pts[(i - 1) % n]
-        p1 = pts[i]
-        p2 = pts[(i + 1) % n]
-        p3 = pts[(i + 2) % n]
-
-        for step in range(amostras_por_trecho):
-            t = step / amostras_por_trecho
-            t2 = t * t
-            t3 = t2 * t
-
-            pos = 0.5 * (
-                (2.0 * p1)
-                + (-p0 + p2) * t
-                + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2
-                + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
-            )
-            curva.append(pos)
-
-    curva = np.asarray(curva, dtype=np.float64)
-
-    min_xy = curva.min(axis=0)
-    max_xy = curva.max(axis=0)
-    span_xy = np.maximum(max_xy - min_xy, 1e-6)
-
-    alvo_min = np.array([65.0, 310.0])
-    alvo_max = np.array([1015.0, 1580.0])
-    alvo_span = alvo_max - alvo_min
-
-    escala = min(alvo_span[0] / span_xy[0], alvo_span[1] / span_xy[1])
-    curva_escalada = (curva - min_xy) * escala
-
-    centro_atual = 0.5 * (curva_escalada.min(axis=0) + curva_escalada.max(axis=0))
-    centro_alvo = 0.5 * (alvo_min + alvo_max)
-    curva_final = curva_escalada + (centro_alvo - centro_atual)
-
-    return curva_final
-
-
-def _reamostrar_pista(curva_px, num_pontos=700):
-    segmentos = np.linalg.norm(np.diff(curva_px, axis=0, append=curva_px[:1]), axis=1)
-    dist_acum = np.concatenate([[0.0], np.cumsum(segmentos)])
-    perimetro = dist_acum[-1]
-
-    alvos = np.linspace(0.0, perimetro, num_pontos, endpoint=False)
-    x_interp = np.interp(alvos, dist_acum, np.append(curva_px[:, 0], curva_px[0, 0]))
-    y_interp = np.interp(alvos, dist_acum, np.append(curva_px[:, 1], curva_px[0, 1]))
-    return np.column_stack([x_interp, y_interp])
-
-
-def _calcular_velocidades_kmh(pista_pts, clima: str):
-    n = len(pista_pts)
-    vel_kmh = np.zeros(n, dtype=np.float64)
-    vel_max = 298.0 if clima == "Seco" else 258.0
-    vel_min = 112.0 if clima == "Seco" else 92.0
-
-    for i in range(n):
-        p_prev = pista_pts[(i - 12) % n]
-        p_curr = pista_pts[i]
-        p_next = pista_pts[(i + 12) % n]
-
-        v1 = p_curr - p_prev
-        v2 = p_next - p_curr
-        n1 = np.linalg.norm(v1)
-        n2 = np.linalg.norm(v2)
-        if n1 < 1e-6 or n2 < 1e-6:
-            vel_kmh[i] = vel_max
-            continue
-
-        cos_ang = np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)
-        deflexao = np.arccos(cos_ang)
-        fator_reta = np.clip(1.0 - (deflexao / 1.45), 0.0, 1.0)
-        vel_kmh[i] = vel_min + (vel_max - vel_min) * (fator_reta ** 1.35)
-
-    kernel = np.ones(9) / 9.0
-    vel_suave = np.convolve(np.pad(vel_kmh, 4, mode="wrap"), kernel, mode="valid")
-    return vel_suave
+W, H = 1080, 1920
+MAP_W, MAP_H = 4400, 3960
 
 
 def _carregar_fonte(tamanho):
@@ -407,222 +28,616 @@ def _carregar_fonte(tamanho):
     return ImageFont.load_default()
 
 
-def gerar_frames(
-    circuito_nome: str,
-    info_circuito: dict,
-    grid: list,
-    voltas_simuladas: int,
-    duracao_seg: int,
+font_tag = _carregar_fonte(22)
+font_placar_titulo = _carregar_fonte(24)
+font_placar = _carregar_fonte(22)
+font_legenda = _carregar_fonte(28)
+font_banner = _carregar_fonte(26)
+font_pista_label = _carregar_fonte(20)
+
+
+def _hex_para_rgb(cor_hex):
+    cor_hex = cor_hex.lstrip("#")
+    return tuple(int(cor_hex[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _cor_detalhe_por_equipe(equipe):
+    detalhes = {
+        "McLaren": (25, 25, 25),
+        "Ferrari": (255, 220, 0),
+        "Mercedes": (220, 220, 220),
+        "Red Bull Racing": (235, 30, 45),
+        "Audi": (255, 255, 255),
+        "Aston Martin": (190, 215, 0),
+        "Williams": (255, 255, 255),
+        "Alpine": (25, 45, 95),
+        "Racing Bulls": (255, 255, 255),
+        "Cadillac": (25, 25, 30),
+        "Haas": (220, 30, 40),
+    }
+    return detalhes.get(equipe, (240, 240, 240))
+
+
+CIRCUITOS_2026 = {
+    "Brasil (Interlagos)": {
+        "titulo": "GP DE SAO PAULO - INTERLAGOS",
+        "voltas_padrao": 71,
+        "pontos_norm": [
+            (0.77, 0.84),  # Reta da Meta / Start-Finish (inicio)
+            (0.80, 0.64),  # Reta da Meta - meio
+            (0.83, 0.44),  # Reta da Meta - aproximacao do Senna S
+            (0.77, 0.31),  # Senna S - Curva 1
+            (0.84, 0.22),  # Chicane / Senna S - Curva 2
+            (0.78, 0.14),  # Curva do Sol - Curva 3
+            (0.60, 0.12),  # Reta Oposta - inicio
+            (0.40, 0.12),  # Reta Oposta - meio
+            (0.22, 0.14),  # Reta Oposta - fim
+            (0.16, 0.24),  # Curva do Lago - Curva 4
+            (0.25, 0.34),  # Descida rumo a Ferradura
+            (0.42, 0.39),  # Ferradura - Curva 5
+            (0.56, 0.43),  # Ferradura - Curva 6
+            (0.60, 0.52),  # Curva da Laranjinha - Curva 7
+            (0.52, 0.58),  # Laranja - Curva 8
+            (0.42, 0.56),  # Pinheirinho - Curva 9
+            (0.35, 0.65),  # Bico de Pato - Curva 10
+            (0.44, 0.73),  # Mergulho - Curva 11
+            (0.24, 0.76),  # Juncao - Curva 12
+            (0.19, 0.84),  # Juncao - Curva 13
+            (0.35, 0.91),  # Arco oval inferior (Subida dos Boxes - Curva 14)
+            (0.60, 0.91),  # Arco oval inferior - abertura ate entrada do pit lane
+            (0.74, 0.89),  # Transicao oval suave ate a reta da chegada
+        ],
+    },
+    "Austrália (Melbourne)": {
+        "titulo": "GP DA AUSTRALIA - MELBOURNE",
+        "voltas_padrao": 58,
+        "pontos_norm": [
+            (0.18, 0.80), (0.58, 0.80), (0.86, 0.66), (0.82, 0.34),
+            (0.56, 0.18), (0.40, 0.36), (0.22, 0.26), (0.12, 0.52),
+        ],
+    },
+    "China (Xangai)": {
+        "titulo": "GP DA CHINA - XANGAI",
+        "voltas_padrao": 56,
+        "pontos_norm": [
+            (0.18, 0.82), (0.62, 0.82), (0.72, 0.68), (0.64, 0.52),
+            (0.46, 0.48), (0.35, 0.60), (0.42, 0.38), (0.72, 0.28),
+            (0.86, 0.18), (0.74, 0.14), (0.38, 0.16), (0.15, 0.24),
+            (0.13, 0.46), (0.24, 0.60),
+        ],
+    },
+    "Japão (Suzuka)": {
+        "titulo": "GP DO JAPAO - SUZUKA",
+        "voltas_padrao": 53,
+        "pontos_norm": [
+            (0.15, 0.78), (0.58, 0.74), (0.76, 0.42), (0.48, 0.20),
+            (0.24, 0.32), (0.46, 0.52), (0.86, 0.44), (0.80, 0.80),
+        ],
+    },
+    "Miami": {
+        "titulo": "GP DE MIAMI",
+        "voltas_padrao": 57,
+        "pontos_norm": [
+            (0.15, 0.82), (0.80, 0.82), (0.88, 0.52), (0.60, 0.42),
+            (0.80, 0.22), (0.32, 0.18), (0.16, 0.44), (0.38, 0.64),
+        ],
+    },
+    "Canadá (Montreal)": {
+        "titulo": "GP DO CANADA - MONTREAL",
+        "voltas_padrao": 70,
+        "pontos_norm": [
+            (0.12, 0.68), (0.88, 0.68), (0.85, 0.34), (0.50, 0.26),
+            (0.32, 0.44), (0.14, 0.36),
+        ],
+    },
+    "Mônaco": {
+        "titulo": "GP DE MONACO",
+        "voltas_padrao": 78,
+        "pontos_norm": [
+            (0.20, 0.82), (0.82, 0.82), (0.88, 0.50), (0.62, 0.20),
+            (0.44, 0.40), (0.24, 0.18), (0.12, 0.46),
+        ],
+    },
+    "Espanha (Barcelona-Catalunha)": {
+        "titulo": "GP DA ESPANHA - BARCELONA",
+        "voltas_padrao": 66,
+        "pontos_norm": [
+            (0.15, 0.80), (0.85, 0.80), (0.88, 0.42), (0.62, 0.20),
+            (0.30, 0.22), (0.16, 0.44), (0.46, 0.56), (0.20, 0.64),
+        ],
+    },
+    "Áustria (Red Bull Ring)": {
+        "titulo": "GP DA AUSTRIA - RED BULL RING",
+        "voltas_padrao": 71,
+        "pontos_norm": [
+            (0.15, 0.82), (0.86, 0.78), (0.70, 0.30), (0.34, 0.20),
+            (0.18, 0.50),
+        ],
+    },
+    "Grã-Bretanha (Silverstone)": {
+        "titulo": "GP DA GRA-BRETANHA - SILVERSTONE",
+        "voltas_padrao": 52,
+        "pontos_norm": [
+            (0.15, 0.78), (0.72, 0.78), (0.88, 0.48), (0.62, 0.20),
+            (0.30, 0.24), (0.54, 0.46), (0.20, 0.54),
+        ],
+    },
+    "Bélgica (Spa-Francorchamps)": {
+        "titulo": "GP DA BELGICA - SPA-FRANCORCHAMPS",
+        "voltas_padrao": 44,
+        "pontos_norm": [
+            (0.15, 0.82), (0.48, 0.62), (0.34, 0.26), (0.74, 0.16),
+            (0.88, 0.46), (0.66, 0.80), (0.34, 0.70),
+        ],
+    },
+    "Hungria": {
+        "titulo": "GP DA HUNGRIA - BUDAPESTE",
+        "voltas_padrao": 70,
+        "pontos_norm": [
+            (0.16, 0.82), (0.80, 0.82), (0.88, 0.48), (0.64, 0.20),
+            (0.32, 0.24), (0.46, 0.54), (0.18, 0.54),
+        ],
+    },
+    "Países Baixos (Zandvoort)": {
+        "titulo": "GP DOS PAISES BAIXOS - ZANDVOORT",
+        "voltas_padrao": 72,
+        "pontos_norm": [
+            (0.15, 0.80), (0.82, 0.78), (0.88, 0.40), (0.56, 0.18),
+            (0.22, 0.28), (0.44, 0.52), (0.16, 0.58),
+        ],
+    },
+    "Itália (Monza)": {
+        "titulo": "GP DA ITALIA - MONZA",
+        "voltas_padrao": 53,
+        "pontos_norm": [
+            (0.12, 0.72), (0.88, 0.72), (0.85, 0.30), (0.44, 0.30),
+            (0.30, 0.50), (0.14, 0.44),
+        ],
+    },
+    "Espanha (Madri - IFEMA)": {
+        "titulo": "GP DE MADRI - IFEMA",
+        "voltas_padrao": 57,
+        "pontos_norm": [
+            (0.15, 0.82), (0.84, 0.82), (0.88, 0.42), (0.58, 0.18),
+            (0.34, 0.30), (0.52, 0.54), (0.18, 0.56),
+        ],
+    },
+    "Azerbaijão (Baku)": {
+        "titulo": "GP DO AZERBAIJAO - BAKU",
+        "voltas_padrao": 51,
+        "pontos_norm": [
+            (0.14, 0.82), (0.88, 0.82), (0.85, 0.26), (0.56, 0.18),
+            (0.40, 0.40), (0.16, 0.36),
+        ],
+    },
+    "Barém (Sepang - Malásia)": {
+        "titulo": "GP DE SEPANG",
+        "voltas_padrao": 56,
+        "pontos_norm": [
+            (0.15, 0.82), (0.84, 0.80), (0.88, 0.36), (0.56, 0.18),
+            (0.24, 0.26), (0.48, 0.52), (0.18, 0.56),
+        ],
+    },
+    "Singapura": {
+        "titulo": "GP DE SINGAPURA - MARINA BAY",
+        "voltas_padrao": 62,
+        "pontos_norm": [
+            (0.16, 0.82), (0.82, 0.82), (0.88, 0.46), (0.64, 0.20),
+            (0.36, 0.22), (0.48, 0.48), (0.18, 0.54),
+        ],
+    },
+    "Estados Unidos (Austin)": {
+        "titulo": "GP DOS ESTADOS UNIDOS - AUSTIN",
+        "voltas_padrao": 56,
+        "pontos_norm": [
+            (0.15, 0.82), (0.82, 0.80), (0.86, 0.36), (0.54, 0.18),
+            (0.26, 0.30), (0.50, 0.54), (0.18, 0.58),
+        ],
+    },
+    "México": {
+        "titulo": "GP DO MEXICO",
+        "voltas_padrao": 71,
+        "pontos_norm": [
+            (0.14, 0.78), (0.88, 0.78), (0.85, 0.30), (0.52, 0.20),
+            (0.26, 0.34), (0.46, 0.54), (0.16, 0.54),
+        ],
+    },
+    "Las Vegas": {
+        "titulo": "GP DE LAS VEGAS",
+        "voltas_padrao": 50,
+        "pontos_norm": [
+            (0.16, 0.86), (0.84, 0.86), (0.84, 0.16), (0.34, 0.16),
+            (0.34, 0.54), (0.16, 0.54),
+        ],
+    },
+    "Catar": {
+        "titulo": "GP DO CATAR - LUSAIL",
+        "voltas_padrao": 57,
+        "pontos_norm": [
+            (0.15, 0.82), (0.86, 0.82), (0.88, 0.38), (0.58, 0.18),
+            (0.24, 0.24), (0.44, 0.52), (0.18, 0.56),
+        ],
+    },
+    "Abu Dhabi": {
+        "titulo": "GP DE ABU DHABI - YAS MARINA",
+        "voltas_padrao": 58,
+        "pontos_norm": [
+            (0.15, 0.82), (0.84, 0.82), (0.88, 0.42), (0.58, 0.18),
+            (0.28, 0.26), (0.48, 0.54), (0.18, 0.56),
+        ],
+    },
+}
+
+PILOTOS_BASE_2026 = [
+    {"sigla": "NOR", "nome": "Lando Norris", "equipe": "McLaren", "cor_hex": "#FF8000"},
+    {"sigla": "PIA", "nome": "Oscar Piastri", "equipe": "McLaren", "cor_hex": "#FF8000"},
+    {"sigla": "LEC", "nome": "Charles Leclerc", "equipe": "Ferrari", "cor_hex": "#E8002D"},
+    {"sigla": "HAM", "nome": "Lewis Hamilton", "equipe": "Ferrari", "cor_hex": "#E8002D"},
+    {"sigla": "RUS", "nome": "George Russell", "equipe": "Mercedes", "cor_hex": "#27F4D2"},
+    {"sigla": "ANT", "nome": "Andrea Kimi Antonelli", "equipe": "Mercedes", "cor_hex": "#27F4D2"},
+    {"sigla": "VER", "nome": "Max Verstappen", "equipe": "Red Bull Racing", "cor_hex": "#3671C6"},
+    {"sigla": "HAD", "nome": "Isack Hadjar", "equipe": "Red Bull Racing", "cor_hex": "#3671C6"},
+    {"sigla": "BOR", "nome": "Gabriel Bortoleto", "equipe": "Audi", "cor_hex": "#F50537"},
+    {"sigla": "HUL", "nome": "Nico Hülkenberg", "equipe": "Audi", "cor_hex": "#F50537"},
+    {"sigla": "ALO", "nome": "Fernando Alonso", "equipe": "Aston Martin", "cor_hex": "#229971"},
+    {"sigla": "STR", "nome": "Lance Stroll", "equipe": "Aston Martin", "cor_hex": "#229971"},
+    {"sigla": "ALB", "nome": "Alexander Albon", "equipe": "Williams", "cor_hex": "#64C4FF"},
+    {"sigla": "SAI", "nome": "Carlos Sainz", "equipe": "Williams", "cor_hex": "#64C4FF"},
+    {"sigla": "GAS", "nome": "Pierre Gasly", "equipe": "Alpine", "cor_hex": "#FF87BC"},
+    {"sigla": "COL", "nome": "Franco Colapinto", "equipe": "Alpine", "cor_hex": "#FF87BC"},
+    {"sigla": "LAW", "nome": "Liam Lawson", "equipe": "Racing Bulls", "cor_hex": "#6692FF"},
+    {"sigla": "LIN", "nome": "Arvid Lindblad", "equipe": "Racing Bulls", "cor_hex": "#6692FF"},
+    {"sigla": "PER", "nome": "Sergio Pérez", "equipe": "Cadillac", "cor_hex": "#D4AF37"},
+    {"sigla": "BOT", "nome": "Valtteri Bottas", "equipe": "Cadillac", "cor_hex": "#D4AF37"},
+]
+
+PILOTOS_HAAS_OPCOES = {
+    "Bearman + Rafael Câmara": [
+        {"sigla": "BEA", "nome": "Oliver Bearman", "equipe": "Haas", "cor_hex": "#B6BABD"},
+        {"sigla": "CAM", "nome": "Rafael Câmara", "equipe": "Haas", "cor_hex": "#B6BABD"},
+    ],
+    "Ocon + Bearman": [
+        {"sigla": "OCO", "nome": "Esteban Ocon", "equipe": "Haas", "cor_hex": "#B6BABD"},
+        {"sigla": "BEA", "nome": "Oliver Bearman", "equipe": "Haas", "cor_hex": "#B6BABD"},
+    ],
+}
+
+CLIMAS_DB = {
+    "Seco": {
+        "label": "SECO",
+        "grama": (46, 115, 48),
+        "asfalto": (58, 60, 66),
+        "chuva": False,
+    },
+    "Chuva": {
+        "label": "CHUVA",
+        "grama": (34, 85, 38),
+        "asfalto": (38, 42, 50),
+        "chuva": True,
+    },
+}
+
+
+def montar_grid_22(opcao_haas: str):
+    grid = [dict(p) for p in PILOTOS_BASE_2026]
+    grid.extend(dict(p) for p in PILOTOS_HAAS_OPCOES[opcao_haas])
+    return grid
+
+
+def spline_catmull_rom_fechada(ancoras, passos_por_segmento=120):
+    pts = []
+    n = len(ancoras)
+    for i in range(n):
+        p0 = ancoras[(i - 1) % n]
+        p1 = ancoras[i]
+        p2 = ancoras[(i + 1) % n]
+        p3 = ancoras[(i + 2) % n]
+        for s in range(passos_por_segmento):
+            t = s / passos_por_segmento
+            t2 = t * t
+            t3 = t2 * t
+            x = 0.5 * (
+                (2 * p1[0])
+                + (-p0[0] + p2[0]) * t
+                + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2
+                + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3
+            )
+            y = 0.5 * (
+                (2 * p1[1])
+                + (-p0[1] + p2[1]) * t
+                + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2
+                + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3
+            )
+            pts.append((x, y))
+    return pts
+
+
+def reamostrar_distancia_uniforme(pts_brutos, num_pontos_uniformes=3200):
+    arr = np.array(pts_brutos, dtype=np.float64)
+    arr_next = np.roll(arr, -1, axis=0)
+    dists = np.linalg.norm(arr_next - arr, axis=1)
+    cum_dist = np.concatenate(([0.0], np.cumsum(dists)))
+    perimetro_total = cum_dist[-1]
+
+    alvos = np.linspace(0.0, perimetro_total, num_pontos_uniformes, endpoint=False)
+    xs = np.interp(alvos, cum_dist, np.append(arr[:, 0], arr[0, 0]))
+    ys = np.interp(alvos, cum_dist, np.append(arr[:, 1], arr[0, 1]))
+    return list(zip(xs, ys))
+
+
+def desenhar_carro_f1(cor_principal, cor_detalhe):
+    cw, ch = 64, 34
+    sprite = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    rodas = [(8, 2, 20, 8), (8, 26, 20, 32), (42, 3, 54, 9), (42, 25, 54, 31)]
+    for r in rodas:
+        d.rectangle(r, fill=(18, 18, 20))
+    d.rectangle([2, 6, 9, 28], fill=cor_detalhe)
+    d.rectangle([54, 5, 61, 29], fill=cor_detalhe)
+    d.polygon([(9, 9), (38, 7), (56, 13), (56, 21), (38, 27), (9, 25)], fill=cor_principal)
+    d.rectangle([18, 12, 35, 22], fill=cor_detalhe)
+    d.ellipse((28, 13, 36, 21), fill=(255, 255, 255))
+    return sprite
+
+
+def construir_mapa_base(pontos_norm, dados_clima):
+    margem_x, margem_y = 360, 330
+    ancoras_px = [
+        (margem_x + nx * (MAP_W - 2 * margem_x), margem_y + ny * (MAP_H - 2 * margem_y))
+        for nx, ny in pontos_norm
+    ]
+    passos = 45 if len(ancoras_px) > 20 else 120
+    pts_brutos = spline_catmull_rom_fechada(ancoras_px, passos_por_segmento=passos)
+    pontos_pista = reamostrar_distancia_uniforme(pts_brutos, num_pontos_uniformes=3200)
+    total_pts = len(pontos_pista)
+    largura_pista = 128
+
+    mapa_base = Image.new("RGB", (MAP_W, MAP_H), dados_clima["grama"])
+    draw = ImageDraw.Draw(mapa_base)
+
+    rng = np.random.default_rng(42)
+    cor_grama_escura = tuple(max(0, c - 10) for c in dados_clima["grama"])
+    gxs = rng.integers(0, MAP_W, size=5500)
+    gys = rng.integers(0, MAP_H, size=5500)
+    for gx, gy in zip(gxs, gys):
+        draw.ellipse((int(gx), int(gy), int(gx) + 12, int(gy) + 12), fill=cor_grama_escura)
+
+    # Zebras
+    for i in range(0, total_pts, 16):
+        p1 = pontos_pista[i]
+        p2 = pontos_pista[(i + 16) % total_pts]
+        cor_zebra = (220, 35, 35) if (i // 16) % 2 == 0 else (240, 240, 240)
+        r_z = (largura_pista + 18) // 2
+        draw.line([p1, p2], fill=cor_zebra, width=largura_pista + 18)
+        draw.ellipse((p1[0] - r_z, p1[1] - r_z, p1[0] + r_z, p1[1] + r_z), fill=cor_zebra)
+
+    # Asfalto principal
+    r_p = largura_pista // 2
+    for p in pontos_pista:
+        draw.ellipse((p[0] - r_p, p[1] - r_p, p[0] + r_p, p[1] + r_p), fill=dados_clima["asfalto"])
+
+    # Pit Lane e Boxes na reta principal
+    inicio_pit = int(total_pts * 0.88)
+    fim_pit = int(total_pts * 0.08)
+    pit_indices = list(range(inicio_pit, total_pts)) + list(range(0, fim_pit))
+    pit_pts, pit_borda_pts, boxes_pts = [], [], []
+
+    for idx in pit_indices:
+        p_cur = pontos_pista[idx]
+        p_nxt = pontos_pista[(idx + 4) % total_pts]
+        ang_r = math.atan2(p_nxt[1] - p_cur[1], p_nxt[0] - p_cur[0])
+        perp_esq = ang_r - math.pi / 2
+
+        pit_pts.append((p_cur[0] + math.cos(perp_esq) * 96, p_cur[1] + math.sin(perp_esq) * 96))
+        pit_borda_pts.append((p_cur[0] + math.cos(perp_esq) * 56, p_cur[1] + math.sin(perp_esq) * 56))
+        boxes_pts.append((p_cur[0] + math.cos(perp_esq) * 162, p_cur[1] + math.sin(perp_esq) * 162))
+
+    largura_pit = 60
+    r_pit = largura_pit // 2
+    for pp in pit_pts:
+        draw.ellipse((pp[0] - r_pit, pp[1] - r_pit, pp[0] + r_pit, pp[1] + r_pit), fill=dados_clima["asfalto"])
+
+    for k in range(len(pit_borda_pts) - 1):
+        cor_linha = (245, 200, 35) if k < len(pit_borda_pts) // 2 else (235, 235, 240)
+        larg_linha = 5 if k < len(pit_borda_pts) // 2 else 3
+        draw.line([pit_borda_pts[k], pit_borda_pts[k + 1]], fill=cor_linha, width=larg_linha)
+
+    cor_boxes = (70, 76, 88)
+    cor_teto_boxes = (110, 118, 132)
+    passo_box = max(12, len(boxes_pts) // 9)
+    for idx_b in range(10, max(11, len(boxes_pts) - 10), passo_box):
+        bx, by = boxes_pts[idx_b]
+        p_a = boxes_pts[idx_b - 6]
+        p_b = boxes_pts[idx_b + 6]
+        ang_b = math.atan2(p_b[1] - p_a[1], p_b[0] - p_a[0])
+        w_box, h_box = 30, 15
+        cantos = []
+        for sx_c, sy_c in [(-w_box, -h_box), (w_box, -h_box), (w_box, h_box), (-w_box, h_box)]:
+            rx = bx + math.cos(ang_b) * sx_c - math.sin(ang_b) * sy_c
+            ry = by + math.sin(ang_b) * sx_c + math.cos(ang_b) * sy_c
+            cantos.append((rx, ry))
+        draw.polygon(cantos, fill=cor_boxes, outline=cor_teto_boxes)
+
+    if len(pit_pts) > 15:
+        p_lbl_pit = pit_pts[len(pit_pts) // 3]
+        draw.text((p_lbl_pit[0] - 42, p_lbl_pit[1] - 12), "PIT LANE", font=font_pista_label, fill=(255, 225, 80))
+
+    if len(boxes_pts) > 20:
+        p_lbl_box = boxes_pts[len(boxes_pts) // 2]
+        draw.text((p_lbl_box[0] - 32, p_lbl_box[1] - 12), "BOXES", font=font_pista_label, fill=(220, 230, 245))
+
+    # Linha de chegada quadriculada
+    idx_chegada = int(total_pts * 0.05)
+    p_chegada = pontos_pista[idx_chegada]
+    p_next = pontos_pista[(idx_chegada + 6) % total_pts]
+    ang_chegada = math.atan2(p_next[1] - p_chegada[1], p_next[0] - p_chegada[0])
+    perp_ang = ang_chegada + math.pi / 2
+
+    for row in range(-1, 2):
+        for col in range(-5, 6):
+            cor_q = (255, 255, 255) if (row + col) % 2 == 0 else (20, 20, 20)
+            cx = p_chegada[0] + math.cos(ang_chegada) * (row * 10) + math.cos(perp_ang) * (col * 10)
+            cy = p_chegada[1] + math.sin(ang_chegada) * (row * 10) + math.sin(perp_ang) * (col * 10)
+            draw.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), fill=cor_q)
+
+    return mapa_base, pontos_pista, idx_chegada
+
+
+def renderizar_frames_dinamicos(
+    titulo_circuito: str,
+    pontos_norm: list,
+    grid_22: list,
+    voltas_alvo: int,
+    duracao: int,
     fps: int,
-    clima: str,
+    clima_nome: str,
     vencedor_sigla: str,
 ):
-    amostras = 15 if len(info_circuito["pontos"]) > 20 else 40
-    curva_bruta = _spline_fechada(info_circuito["pontos"], amostras_por_trecho=amostras)
-    pista_pts = _reamostrar_pista(curva_bruta, num_pontos=700)
-    n_pts = len(pista_pts)
-    vel_pista_kmh = _calcular_velocidades_kmh(pista_pts, clima)
+    dados_clima = CLIMAS_DB[clima_nome]
+    mapa_base, pontos_pista, idx_chegada = construir_mapa_base(pontos_norm, dados_clima)
+    total_pts = len(pontos_pista)
 
-    total_frames = max(1, int(duracao_seg * fps))
-    num_carros = len(grid)
+    grid_ordenado = sorted(
+        grid_22,
+        key=lambda p: (0 if p["sigla"] == vencedor_sigla else 1),
+    )
 
-    velocidades = []
-    for idx, piloto in enumerate(grid):
-        base = 1.0 + (num_carros - idx) * 0.0025 + ((idx * 7) % 5 - 2) * 0.0012
-        if piloto["sigla"] == vencedor_sigla:
-            base += 0.018
-        if clima == "Chuva":
-            base *= 0.90
-        velocidades.append(base)
+    tempo_luzes = min(2.4, duracao * 0.2)
+    tempo_corrida_total = max(1.0, duracao - tempo_luzes)
+    vel_media = ((total_pts * voltas_alvo) / tempo_corrida_total) * 0.78
 
-    fonte_titulo = _carregar_fonte(44)
-    fonte_sub = _carregar_fonte(26)
-    fonte_carro = _carregar_fonte(19)
-    fonte_top = _carregar_fonte(21)
+    carros = []
+    num_carros = len(grid_ordenado)
+    for pos_g, info in enumerate(grid_ordenado):
+        cor_rgb = _hex_para_rgb(info["cor_hex"])
+        cor_det = _cor_detalhe_por_equipe(info["equipe"])
+        bonus_vel = 12.0 if info["sigla"] == vencedor_sigla else ((num_carros - pos_g) * 0.45 - 4.0)
 
-    cor_fundo = (12, 16, 24) if clima == "Seco" else (14, 22, 34)
-    cor_asfalto = (46, 50, 58) if clima == "Seco" else (36, 44, 56)
+        carros.append({
+            "sigla": info["sigla"],
+            "cor": cor_rgb,
+            "detalhe": cor_det,
+            "grid": pos_g,
+            "vel": max(vel_media * 0.75, vel_media + bonus_vel - (pos_g * 0.55)),
+            "faixa_base": -20 if pos_g % 2 == 0 else 20,
+            "sprite": desenhar_carro_f1(cor_rgb, cor_det),
+            "offset_inicial": -24 - pos_g * 14,
+        })
 
-    lista_pts = [(float(x), float(y)) for x, y in pista_pts]
-    historico_rasto = {p["sigla"]: [] for p in grid}
+    total_frames = max(1, int(duracao * fps))
     frames = []
 
     for f_idx in range(total_frames):
-        progresso = f_idx / total_frames
-        img = Image.new("RGB", (LARGURA, ALTURA), cor_fundo)
-        draw = ImageDraw.Draw(img)
+        t = f_idx / fps
+        t_corrida = max(0.0, t - tempo_luzes)
+        estado_carros = []
 
-        draw.rectangle([48, 52, LARGURA - 48, 225], fill=(22, 28, 40), outline=(65, 78, 102), width=2)
-        draw.text((76, 72), circuito_nome.upper(), fill=(255, 255, 255), font=fonte_titulo)
-        volta_atual = min(voltas_simuladas, max(1, int(progresso * voltas_simuladas) + 1))
-        draw.text(
-            (76, 138),
-            f"{info_circuito['pista']}  |  Clima: {clima}  |  Volta {volta_atual}/{voltas_simuladas}",
-            fill=(185, 198, 220),
-            font=fonte_sub,
-        )
-
-        for i in range(0, n_pts, 8):
-            x, y = lista_pts[i]
-            cor_zebra = (225, 45, 45) if (i // 8) % 2 == 0 else (240, 240, 240)
-            draw.ellipse([x - 24, y - 24, x + 24, y + 24], fill=cor_zebra)
-
-        draw.polygon(lista_pts, outline=cor_asfalto)
-        draw.line(lista_pts + [lista_pts[0]], fill=cor_asfalto, width=36)
-        draw.line(lista_pts + [lista_pts[0]], fill=(72, 78, 90), width=3)
-
-        x0, y0 = lista_pts[0]
-        x1, y1 = lista_pts[1]
-        dx, dy = x1 - x0, y1 - y0
-        norm = math.hypot(dx, dy) or 1.0
-        nx, ny = -dy / norm, dx / norm
-        draw.line(
-            [(x0 - nx * 22, y0 - ny * 22), (x0 + nx * 22, y0 + ny * 22)],
-            fill=(255, 255, 255),
-            width=7,
-        )
-
-        posicoes_carros = []
-        for idx, piloto in enumerate(grid):
-            offset_grid = (num_carros - idx) * 5.0
-            distancia_total = (progresso * voltas_simuladas * n_pts * velocidades[idx]) - offset_grid
-            indice_pista = int(distancia_total) % n_pts
-
-            lateral = ((idx % 3) - 1) * 6.5
-            px, py = lista_pts[indice_pista]
-            next_px, next_py = lista_pts[(indice_pista + 1) % n_pts]
-            tdx, tdy = next_px - px, next_py - py
-            tnorm = math.hypot(tdx, tdy) or 1.0
-            cx = px + (-tdy / tnorm) * lateral
-            cy = py + (tdx / tnorm) * lateral
-
-            kmh_atual = float(vel_pista_kmh[indice_pista]) * (0.985 + (idx % 4) * 0.008)
-            historico_rasto[piloto["sigla"]].append((cx, cy))
-            historico_rasto[piloto["sigla"]] = historico_rasto[piloto["sigla"]][-24:]
-
-            posicoes_carros.append((distancia_total, idx, piloto, cx, cy, kmh_atual))
-
-        for _, _, piloto, _, _, _ in posicoes_carros:
-            trilha = historico_rasto[piloto["sigla"]]
-            if len(trilha) > 1:
-                draw.line(trilha, fill=piloto["cor"], width=5)
-
-        for _, _, piloto, cx, cy, _ in posicoes_carros:
-            r = 12
-            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=piloto["cor"], outline=(255, 255, 255), width=2)
-            draw.text((cx + 14, cy - 11), piloto["sigla"], fill=(255, 255, 255), font=fonte_carro)
-
-        ranking = sorted(posicoes_carros, key=lambda item: item[0], reverse=True)
-        dist_lider = ranking[0][0]
-        vel_media_pts_seg = max((voltas_simuladas * n_pts) / max(duracao_seg, 1), 1.0)
-
-        draw.rectangle([48, 1615, LARGURA - 48, 1880], fill=(22, 28, 40), outline=(65, 78, 102), width=2)
-        draw.text((76, 1628), "TELEMETRIA TOP 6  |  GAP & VELOCIDADE", fill=(255, 215, 64), font=fonte_top)
-
-        for pos_idx, (dist_carro, _, piloto, _, _, kmh_atual) in enumerate(ranking[:6], start=1):
-            col = 0 if pos_idx <= 3 else 1
-            linha = (pos_idx - 1) % 3
-            rx = 76 + col * 465
-            ry = 1672 + linha * 66
-
-            if pos_idx == 1:
-                gap_txt = "LEADER"
+        for c in carros:
+            if t_corrida == 0:
+                dist = 0.0
             else:
-                gap_seg = max(0.05, (dist_lider - dist_carro) / vel_media_pts_seg)
-                gap_txt = f"+{gap_seg:.3f}s"
+                arrancada = min(1.0, t_corrida / 1.8)
+                dist = c["vel"] * t_corrida * (0.45 + 0.55 * arrancada)
 
-            draw.rectangle([rx, ry, rx + 435, ry + 56], fill=(32, 40, 56), outline=piloto["cor"], width=3)
-            draw.text(
-                (rx + 14, ry + 15),
-                f"P{pos_idx} {piloto['sigla']}  {gap_txt}  {int(round(kmh_atual))}km/h",
-                fill=(255, 255, 255),
-                font=fonte_top,
-            )
+            progresso_abs = c["offset_inicial"] + dist
+            pos_idx = (idx_chegada + progresso_abs) % total_pts
+            i0 = int(pos_idx)
+            i1 = (i0 + 1) % total_pts
+            frac = pos_idx - i0
 
-        frames.append(np.asarray(img, dtype=np.uint8))
+            p0 = pontos_pista[i0]
+            p1 = pontos_pista[i1]
+            px = p0[0] + (p1[0] - p0[0]) * frac
+            py = p0[1] + (p1[1] - p0[1]) * frac
 
-    return frames
+            ang = math.atan2(p1[1] - p0[1], p1[0] - p0[0])
+            perp = ang + math.pi / 2
 
+            desloc = c["faixa_base"]
+            if c["grid"] < 2 and t_corrida > 2.0:
+                desloc = 24 * math.sin(t_corrida * 0.55 + c["grid"])
 
-st.title("Gerador de Corridas F1 2D (MP4)")
-st.caption("Temporada 2026 • 23 circuitos • 22 carros • Rasto & Telemetria • 1080x1920")
+            cx = px + math.cos(perp) * desloc
+            cy = py + math.sin(perp) * desloc
 
-circuito_nome = st.selectbox("Circuito", list(CIRCUITOS_2026.keys()))
-info_circuito = dict(CIRCUITOS_2026[circuito_nome])
+            estado_carros.append({
+                "sigla": c["sigla"],
+                "cor": c["cor"],
+                "x": cx,
+                "y": cy,
+                "ang_rad": ang,
+                "ang_deg": -math.degrees(ang),
+                "sprite": c["sprite"],
+                "progresso_abs": progresso_abs,
+            })
 
-imagem_circuito = st.file_uploader(
-    "Ou envie uma imagem do circuito (PNG/JPG) para traçar automaticamente",
-    type=["png", "jpg", "jpeg"],
-)
+        ranking = sorted(estado_carros, key=lambda item: item["progresso_abs"], reverse=True)
+        lider = ranking[0]
+        volta_atual = min(voltas_alvo, max(1, int(max(0, lider["progresso_abs"]) // total_pts) + 1))
 
-if imagem_circuito is not None:
-    pontos_extraidos = extrair_pontos_da_imagem(imagem_circuito)
-    if pontos_extraidos:
-        nome_custom = st.text_input("Nome do circuito enviado", value=circuito_nome)
-        circuito_nome = nome_custom.strip() or circuito_nome
-        info_circuito["pontos"] = pontos_extraidos
-        info_circuito["pista"] = "Traçado extraído da imagem"
-        st.success("Traçado lido da imagem com sucesso!")
-    else:
-        st.error("Não foi possível detectar o contorno fechado da pista nessa imagem. Tente uma imagem mais limpa.")
+        cam_x = float(np.mean([r["x"] for r in ranking[:3]]))
+        cam_y = float(np.mean([r["y"] for r in ranking[:3]]))
 
-opcao_haas = st.selectbox("Dupla da Haas", list(PILOTOS_HAAS_OPCOES.keys()))
-grid_22 = montar_grid_22(opcao_haas)
+        left = int(max(0, min(MAP_W - W, cam_x - W // 2)))
+        top = int(max(0, min(MAP_H - H, cam_y - H // 2)))
+        frame = mapa_base.crop((left, top, left + W, top + H)).convert("RGBA")
 
-col1, col2 = st.columns(2)
-with col1:
-    voltas = st.number_input(
-        "Voltas simuladas",
-        min_value=1,
-        max_value=80,
-        value=min(15, info_circuito["voltas_padrao"]),
-    )
-    duracao = st.slider("Duração do vídeo (seg)", min_value=4, max_value=20, value=8)
+        overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
 
-with col2:
-    clima = st.selectbox("Clima", ["Seco", "Chuva"])
-    fps = st.selectbox("FPS", [15, 24, 30], index=0)
+        for ec in estado_carros:
+            sx_centro = ec["x"] - left
+            sy_centro = ec["y"] - top
 
-siglas_grid = [p["sigla"] for p in grid_22]
-vencedor = st.selectbox("Vencedor simulado", siglas_grid, index=0)
+            if -120 <= sx_centro <= W + 120 and -120 <= sy_centro <= H + 120:
+                if dados_clima["chuva"] and t_corrida > 0.3:
+                    for s_step in range(1, 5):
+                        bx = sx_centro - math.cos(ec["ang_rad"]) * (24 + s_step * 12)
+                        by = sy_centro - math.sin(ec["ang_rad"]) * (24 + s_step * 12)
+                        raio_spray = 7 + s_step * 2
+                        alpha_spray = max(20, 100 - s_step * 20)
+                        od.ellipse(
+                            (bx - raio_spray, by - raio_spray, bx + raio_spray, by + raio_spray),
+                            fill=(220, 235, 250, alpha_spray),
+                        )
 
-if st.button("Gerar MP4", type="primary"):
-    with st.spinner("Renderizando frames e montando o vídeo MP4..."):
-        frames = gerar_frames(
-            circuito_nome=circuito_nome,
-            info_circuito=info_circuito,
-            grid=grid_22,
-            voltas_simuladas=int(voltas),
-            duracao_seg=int(duracao),
-            fps=int(fps),
-            clima=clima,
-            vencedor_sigla=vencedor,
+                rot_sprite = ec["sprite"].rotate(ec["ang_deg"], expand=True, resample=Image.BICUBIC)
+                frame.paste(
+                    rot_sprite,
+                    (int(sx_centro - rot_sprite.width // 2), int(sy_centro - rot_sprite.height // 2)),
+                    rot_sprite,
+                )
+
+                tag_w, tag_h = 66, 28
+                tx = int(sx_centro - tag_w // 2)
+                ty = int(sy_centro - 48)
+                od.rounded_rectangle(
+                    [tx, ty, tx + tag_w, ty + tag_h],
+                    radius=7,
+                    fill=ec["cor"] + (235,),
+                    outline=(255, 255, 255, 230),
+                    width=2,
+                )
+                od.text((tx + 8, ty + 2), ec["sigla"], font=font_tag, fill=(255, 255, 255, 255))
+
+        if dados_clima["chuva"]:
+            rng_chuva = np.random.default_rng(int(t * 100))
+            xs = rng_chuva.integers(0, W, size=85)
+            ys = rng_chuva.integers(0, H, size=85)
+            for rx, ry in zip(xs, ys):
+                od.line([(int(rx), int(ry)), (int(rx - 8), int(ry + 26))], fill=(200, 225, 255, 105), width=2)
+
+        od.rounded_rectangle([40, 45, 1040, 108], radius=16, fill=(15, 18, 25, 225))
+        od.text(
+            (65, 62),
+            f"{titulo_circuito} - CLIMA: {dados_clima['label']}",
+            font=font_banner,
+            fill=(255, 255, 255, 255),
         )
 
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-            caminho_mp4 = tmp.name
-
-        try:
-            clip = ImageSequenceClip(frames, fps=int(fps))
-            clip.write_videofile(
-                caminho_mp4,
-                codec="libx264",
-                audio=False,
-                logger=None,
-            )
-            clip.close()
-
-            with open(caminho_mp4, "rb") as f:
-                video_bytes = f.read()
-
-            st.success("Vídeo gerado com sucesso!")
-            st.video(video_bytes)
-            st.download_button(
-                label="Baixar MP4",
-                data=video_bytes,
-                file_name=f"f1_2026_{circuito_nome.lower().replace(' ', '_')}.mp4",
-                mime="video/mp4",
-            )
-        finally:
-            if os.path.exists(caminho_mp4):
-                os.remove(caminho_mp4)
+        od.rounded_rectangle([40, 128, 300, 455], radius=16, fill=(15, 18, 25, 220))
+        od.text((60, 142), f"VOLTA {volta_atual}/{voltas_alvo}", font=font_placar_titulo, fill=(255, 220, 50, 255))
+        for pos, r in enumerate(ranking[:8]):
+            py_row = 182 + pos * 32
+            od.rectangle([60, py_row + 4, 74, py_row + 22], fill=r["cor"] + (255,))
+            od.text((84, py_row), f"{pos + 1}. {r['sigla']}", font
