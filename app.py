@@ -38,7 +38,7 @@ font_pista_label = _carregar_fonte(20)
 
 def _hex_para_rgb(cor_hex):
     cor_hex = cor_hex.lstrip("#")
-    return tuple(int(cor_hex[i:i + 2], 16) for i in (0, 2, 4))
+    return tuple(int(cor_hex[i : i + 2], 16) for i in (0, 2, 4))
 
 
 def _cor_detalhe_por_equipe(equipe):
@@ -63,94 +63,140 @@ CIRCUITOS_2026 = {
         "titulo": "GP DE SAO PAULO - INTERLAGOS",
         "voltas_padrao": 71,
         "pontos_norm": [
-            (0.77, 0.84),  # Reta da Meta / Start-Finish (inicio)
-            (0.80, 0.64),  # Reta da Meta - meio
-            (0.83, 0.44),  # Reta da Meta - aproximacao do Senna S
-            (0.77, 0.31),  # Senna S - Curva 1
-            (0.84, 0.22),  # Chicane / Senna S - Curva 2
-            (0.78, 0.14),  # Curva do Sol - Curva 3
-            (0.60, 0.12),  # Reta Oposta - inicio
-            (0.40, 0.12),  # Reta Oposta - meio
-            (0.22, 0.14),  # Reta Oposta - fim
-            (0.16, 0.24),  # Curva do Lago - Curva 4
-            (0.25, 0.34),  # Descida rumo a Ferradura
-            (0.42, 0.39),  # Ferradura - Curva 5
-            (0.56, 0.43),  # Ferradura - Curva 6
-            (0.60, 0.52),  # Curva da Laranjinha - Curva 7
-            (0.52, 0.58),  # Laranja - Curva 8
-            (0.42, 0.56),  # Pinheirinho - Curva 9
-            (0.35, 0.65),  # Bico de Pato - Curva 10
-            (0.44, 0.73),  # Mergulho - Curva 11
-            (0.24, 0.76),  # Juncao - Curva 12
-            (0.19, 0.84),  # Juncao - Curva 13
-            (0.35, 0.91),  # Arco oval inferior (Subida dos Boxes - Curva 14)
-            (0.60, 0.91),  # Arco oval inferior - abertura ate entrada do pit lane
-            (0.74, 0.89),  # Transicao oval suave ate a reta da chegada
+            (0.77, 0.84),
+            (0.80, 0.64),
+            (0.83, 0.44),
+            (0.77, 0.31),
+            (0.84, 0.22),
+            (0.78, 0.14),
+            (0.60, 0.12),
+            (0.40, 0.12),
+            (0.22, 0.14),
+            (0.16, 0.24),
+            (0.25, 0.34),
+            (0.42, 0.39),
+            (0.56, 0.43),
+            (0.60, 0.52),
+            (0.52, 0.58),
+            (0.42, 0.56),
+            (0.35, 0.65),
+            (0.44, 0.73),
+            (0.24, 0.76),
+            (0.19, 0.84),
+            (0.35, 0.91),
+            (0.60, 0.91),
+            (0.74, 0.89),
         ],
     },
     "Austrália (Melbourne)": {
         "titulo": "GP DA AUSTRALIA - MELBOURNE",
         "voltas_padrao": 58,
         "pontos_norm": [
-            (0.18, 0.80), (0.58, 0.80), (0.86, 0.66), (0.82, 0.34),
-            (0.56, 0.18), (0.40, 0.36), (0.22, 0.26), (0.12, 0.52),
+            (0.18, 0.80),
+            (0.58, 0.80),
+            (0.86, 0.66),
+            (0.82, 0.34),
+            (0.56, 0.18),
+            (0.40, 0.36),
+            (0.22, 0.26),
+            (0.12, 0.52),
         ],
     },
     "China (Xangai)": {
         "titulo": "GP DA CHINA - XANGAI",
         "voltas_padrao": 56,
         "pontos_norm": [
-            (0.18, 0.82), (0.62, 0.82), (0.72, 0.68), (0.64, 0.52),
-            (0.46, 0.48), (0.35, 0.60), (0.42, 0.38), (0.72, 0.28),
-            (0.86, 0.18), (0.74, 0.14), (0.38, 0.16), (0.15, 0.24),
-            (0.13, 0.46), (0.24, 0.60),
+            (0.18, 0.82),
+            (0.62, 0.82),
+            (0.72, 0.68),
+            (0.64, 0.52),
+            (0.46, 0.48),
+            (0.35, 0.60),
+            (0.42, 0.38),
+            (0.72, 0.28),
+            (0.86, 0.18),
+            (0.74, 0.14),
+            (0.38, 0.16),
+            (0.15, 0.24),
+            (0.13, 0.46),
+            (0.24, 0.60),
         ],
     },
     "Japão (Suzuka)": {
         "titulo": "GP DO JAPAO - SUZUKA",
         "voltas_padrao": 53,
         "pontos_norm": [
-            (0.15, 0.78), (0.58, 0.74), (0.76, 0.42), (0.48, 0.20),
-            (0.24, 0.32), (0.46, 0.52), (0.86, 0.44), (0.80, 0.80),
+            (0.15, 0.78),
+            (0.58, 0.74),
+            (0.76, 0.42),
+            (0.48, 0.20),
+            (0.24, 0.32),
+            (0.46, 0.52),
+            (0.86, 0.44),
+            (0.80, 0.80),
         ],
     },
     "Miami": {
         "titulo": "GP DE MIAMI",
         "voltas_padrao": 57,
         "pontos_norm": [
-            (0.15, 0.82), (0.80, 0.82), (0.88, 0.52), (0.60, 0.42),
-            (0.80, 0.22), (0.32, 0.18), (0.16, 0.44), (0.38, 0.64),
+            (0.15, 0.82),
+            (0.80, 0.82),
+            (0.88, 0.52),
+            (0.60, 0.42),
+            (0.80, 0.22),
+            (0.32, 0.18),
+            (0.16, 0.44),
+            (0.38, 0.64),
         ],
     },
     "Canadá (Montreal)": {
         "titulo": "GP DO CANADA - MONTREAL",
         "voltas_padrao": 70,
         "pontos_norm": [
-            (0.12, 0.68), (0.88, 0.68), (0.85, 0.34), (0.50, 0.26),
-            (0.32, 0.44), (0.14, 0.36),
+            (0.12, 0.68),
+            (0.88, 0.68),
+            (0.85, 0.34),
+            (0.50, 0.26),
+            (0.32, 0.44),
+            (0.14, 0.36),
         ],
     },
     "Mônaco": {
         "titulo": "GP DE MONACO",
         "voltas_padrao": 78,
         "pontos_norm": [
-            (0.20, 0.82), (0.82, 0.82), (0.88, 0.50), (0.62, 0.20),
-            (0.44, 0.40), (0.24, 0.18), (0.12, 0.46),
+            (0.20, 0.82),
+            (0.82, 0.82),
+            (0.88, 0.50),
+            (0.62, 0.20),
+            (0.44, 0.40),
+            (0.24, 0.18),
+            (0.12, 0.46),
         ],
     },
     "Espanha (Barcelona-Catalunha)": {
         "titulo": "GP DA ESPANHA - BARCELONA",
         "voltas_padrao": 66,
         "pontos_norm": [
-            (0.15, 0.80), (0.85, 0.80), (0.88, 0.42), (0.62, 0.20),
-            (0.30, 0.22), (0.16, 0.44), (0.46, 0.56), (0.20, 0.64),
+            (0.15, 0.80),
+            (0.85, 0.80),
+            (0.88, 0.42),
+            (0.62, 0.20),
+            (0.30, 0.22),
+            (0.16, 0.44),
+            (0.46, 0.56),
+            (0.20, 0.64),
         ],
     },
     "Áustria (Red Bull Ring)": {
         "titulo": "GP DA AUSTRIA - RED BULL RING",
         "voltas_padrao": 71,
         "pontos_norm": [
-            (0.15, 0.82), (0.86, 0.78), (0.70, 0.30), (0.34, 0.20),
+            (0.15, 0.82),
+            (0.86, 0.78),
+            (0.70, 0.30),
+            (0.34, 0.20),
             (0.18, 0.50),
         ],
     },
@@ -158,112 +204,179 @@ CIRCUITOS_2026 = {
         "titulo": "GP DA GRA-BRETANHA - SILVERSTONE",
         "voltas_padrao": 52,
         "pontos_norm": [
-            (0.15, 0.78), (0.72, 0.78), (0.88, 0.48), (0.62, 0.20),
-            (0.30, 0.24), (0.54, 0.46), (0.20, 0.54),
+            (0.15, 0.78),
+            (0.72, 0.78),
+            (0.88, 0.48),
+            (0.62, 0.20),
+            (0.30, 0.24),
+            (0.54, 0.46),
+            (0.20, 0.54),
         ],
     },
     "Bélgica (Spa-Francorchamps)": {
         "titulo": "GP DA BELGICA - SPA-FRANCORCHAMPS",
         "voltas_padrao": 44,
         "pontos_norm": [
-            (0.15, 0.82), (0.48, 0.62), (0.34, 0.26), (0.74, 0.16),
-            (0.88, 0.46), (0.66, 0.80), (0.34, 0.70),
+            (0.15, 0.82),
+            (0.48, 0.62),
+            (0.34, 0.26),
+            (0.74, 0.16),
+            (0.88, 0.46),
+            (0.66, 0.80),
+            (0.34, 0.70),
         ],
     },
     "Hungria": {
         "titulo": "GP DA HUNGRIA - BUDAPESTE",
         "voltas_padrao": 70,
         "pontos_norm": [
-            (0.16, 0.82), (0.80, 0.82), (0.88, 0.48), (0.64, 0.20),
-            (0.32, 0.24), (0.46, 0.54), (0.18, 0.54),
+            (0.16, 0.82),
+            (0.80, 0.82),
+            (0.88, 0.48),
+            (0.64, 0.20),
+            (0.32, 0.24),
+            (0.46, 0.54),
+            (0.18, 0.54),
         ],
     },
     "Países Baixos (Zandvoort)": {
         "titulo": "GP DOS PAISES BAIXOS - ZANDVOORT",
         "voltas_padrao": 72,
         "pontos_norm": [
-            (0.15, 0.80), (0.82, 0.78), (0.88, 0.40), (0.56, 0.18),
-            (0.22, 0.28), (0.44, 0.52), (0.16, 0.58),
+            (0.15, 0.80),
+            (0.82, 0.78),
+            (0.88, 0.40),
+            (0.56, 0.18),
+            (0.22, 0.28),
+            (0.44, 0.52),
+            (0.16, 0.58),
         ],
     },
     "Itália (Monza)": {
         "titulo": "GP DA ITALIA - MONZA",
         "voltas_padrao": 53,
         "pontos_norm": [
-            (0.12, 0.72), (0.88, 0.72), (0.85, 0.30), (0.44, 0.30),
-            (0.30, 0.50), (0.14, 0.44),
+            (0.12, 0.72),
+            (0.88, 0.72),
+            (0.85, 0.30),
+            (0.44, 0.30),
+            (0.30, 0.50),
+            (0.14, 0.44),
         ],
     },
     "Espanha (Madri - IFEMA)": {
         "titulo": "GP DE MADRI - IFEMA",
         "voltas_padrao": 57,
         "pontos_norm": [
-            (0.15, 0.82), (0.84, 0.82), (0.88, 0.42), (0.58, 0.18),
-            (0.34, 0.30), (0.52, 0.54), (0.18, 0.56),
+            (0.15, 0.82),
+            (0.84, 0.82),
+            (0.88, 0.42),
+            (0.58, 0.18),
+            (0.34, 0.30),
+            (0.52, 0.54),
+            (0.18, 0.56),
         ],
     },
     "Azerbaijão (Baku)": {
         "titulo": "GP DO AZERBAIJAO - BAKU",
         "voltas_padrao": 51,
         "pontos_norm": [
-            (0.14, 0.82), (0.88, 0.82), (0.85, 0.26), (0.56, 0.18),
-            (0.40, 0.40), (0.16, 0.36),
+            (0.14, 0.82),
+            (0.88, 0.82),
+            (0.85, 0.26),
+            (0.56, 0.18),
+            (0.40, 0.40),
+            (0.16, 0.36),
         ],
     },
     "Barém (Sepang - Malásia)": {
         "titulo": "GP DE SEPANG",
         "voltas_padrao": 56,
         "pontos_norm": [
-            (0.15, 0.82), (0.84, 0.80), (0.88, 0.36), (0.56, 0.18),
-            (0.24, 0.26), (0.48, 0.52), (0.18, 0.56),
+            (0.15, 0.82),
+            (0.84, 0.80),
+            (0.88, 0.36),
+            (0.56, 0.18),
+            (0.24, 0.26),
+            (0.48, 0.52),
+            (0.18, 0.56),
         ],
     },
     "Singapura": {
         "titulo": "GP DE SINGAPURA - MARINA BAY",
         "voltas_padrao": 62,
         "pontos_norm": [
-            (0.16, 0.82), (0.82, 0.82), (0.88, 0.46), (0.64, 0.20),
-            (0.36, 0.22), (0.48, 0.48), (0.18, 0.54),
+            (0.16, 0.82),
+            (0.82, 0.82),
+            (0.88, 0.46),
+            (0.64, 0.20),
+            (0.36, 0.22),
+            (0.48, 0.48),
+            (0.18, 0.54),
         ],
     },
     "Estados Unidos (Austin)": {
         "titulo": "GP DOS ESTADOS UNIDOS - AUSTIN",
         "voltas_padrao": 56,
         "pontos_norm": [
-            (0.15, 0.82), (0.82, 0.80), (0.86, 0.36), (0.54, 0.18),
-            (0.26, 0.30), (0.50, 0.54), (0.18, 0.58),
+            (0.15, 0.82),
+            (0.82, 0.80),
+            (0.86, 0.36),
+            (0.54, 0.18),
+            (0.26, 0.30),
+            (0.50, 0.54),
+            (0.18, 0.58),
         ],
     },
     "México": {
         "titulo": "GP DO MEXICO",
         "voltas_padrao": 71,
         "pontos_norm": [
-            (0.14, 0.78), (0.88, 0.78), (0.85, 0.30), (0.52, 0.20),
-            (0.26, 0.34), (0.46, 0.54), (0.16, 0.54),
+            (0.14, 0.78),
+            (0.88, 0.78),
+            (0.85, 0.30),
+            (0.52, 0.20),
+            (0.26, 0.34),
+            (0.46, 0.54),
+            (0.16, 0.54),
         ],
     },
     "Las Vegas": {
         "titulo": "GP DE LAS VEGAS",
         "voltas_padrao": 50,
         "pontos_norm": [
-            (0.16, 0.86), (0.84, 0.86), (0.84, 0.16), (0.34, 0.16),
-            (0.34, 0.54), (0.16, 0.54),
+            (0.16, 0.86),
+            (0.84, 0.86),
+            (0.84, 0.16),
+            (0.34, 0.16),
+            (0.34, 0.54),
+            (0.16, 0.54),
         ],
     },
     "Catar": {
         "titulo": "GP DO CATAR - LUSAIL",
         "voltas_padrao": 57,
         "pontos_norm": [
-            (0.15, 0.82), (0.86, 0.82), (0.88, 0.38), (0.58, 0.18),
-            (0.24, 0.24), (0.44, 0.52), (0.18, 0.56),
+            (0.15, 0.82),
+            (0.86, 0.82),
+            (0.88, 0.38),
+            (0.58, 0.18),
+            (0.24, 0.24),
+            (0.44, 0.52),
+            (0.18, 0.56),
         ],
     },
     "Abu Dhabi": {
         "titulo": "GP DE ABU DHABI - YAS MARINA",
         "voltas_padrao": 58,
         "pontos_norm": [
-            (0.15, 0.82), (0.84, 0.82), (0.88, 0.42), (0.58, 0.18),
-            (0.28, 0.26), (0.48, 0.54), (0.18, 0.56),
+            (0.15, 0.82),
+            (0.84, 0.82),
+            (0.88, 0.42),
+            (0.58, 0.18),
+            (0.28, 0.26),
+            (0.48, 0.54),
+            (0.18, 0.56),
         ],
     },
 }
@@ -402,7 +515,6 @@ def construir_mapa_base(pontos_norm, dados_clima):
     for gx, gy in zip(gxs, gys):
         draw.ellipse((int(gx), int(gy), int(gx) + 12, int(gy) + 12), fill=cor_grama_escura)
 
-    # Zebras
     for i in range(0, total_pts, 16):
         p1 = pontos_pista[i]
         p2 = pontos_pista[(i + 16) % total_pts]
@@ -411,12 +523,10 @@ def construir_mapa_base(pontos_norm, dados_clima):
         draw.line([p1, p2], fill=cor_zebra, width=largura_pista + 18)
         draw.ellipse((p1[0] - r_z, p1[1] - r_z, p1[0] + r_z, p1[1] + r_z), fill=cor_zebra)
 
-    # Asfalto principal
     r_p = largura_pista // 2
     for p in pontos_pista:
         draw.ellipse((p[0] - r_p, p[1] - r_p, p[0] + r_p, p[1] + r_p), fill=dados_clima["asfalto"])
 
-    # Pit Lane e Boxes na reta principal
     inicio_pit = int(total_pts * 0.88)
     fim_pit = int(total_pts * 0.08)
     pit_indices = list(range(inicio_pit, total_pts)) + list(range(0, fim_pit))
@@ -466,7 +576,6 @@ def construir_mapa_base(pontos_norm, dados_clima):
         p_lbl_box = boxes_pts[len(boxes_pts) // 2]
         draw.text((p_lbl_box[0] - 32, p_lbl_box[1] - 12), "BOXES", font=font_pista_label, fill=(220, 230, 245))
 
-    # Linha de chegada quadriculada
     idx_chegada = int(total_pts * 0.05)
     p_chegada = pontos_pista[idx_chegada]
     p_next = pontos_pista[(idx_chegada + 6) % total_pts]
@@ -640,4 +749,99 @@ def renderizar_frames_dinamicos(
         for pos, r in enumerate(ranking[:8]):
             py_row = 182 + pos * 32
             od.rectangle([60, py_row + 4, 74, py_row + 22], fill=r["cor"] + (255,))
-            od.text((84, py_row), f"{pos + 1}. {r['sigla']}", font
+            od.text((84, py_row), f"{pos + 1}. {r['sigla']}", font=font_placar, fill=(245, 245, 245, 255))
+
+        if t < tempo_luzes + 0.8:
+            od.rounded_rectangle([350, 200, 920, 310], radius=20, fill=(15, 15, 20, 235))
+            luzes = min(5, int((t / max(tempo_luzes * 0.8, 0.1)) * 5) + 1) if t < tempo_luzes else 0
+            for lz in range(5):
+                lx = 415 + lz * 110
+                cor_l = (240, 25, 25, 255) if lz < luzes else (55, 55, 60, 255)
+                od.ellipse((lx - 26, 255 - 26, lx + 26, 255 + 26), fill=cor_l)
+
+        od.rounded_rectangle([50, 1580, 1030, 1735], radius=22, fill=(10, 12, 18, 225))
+        if t < tempo_luzes:
+            msg1 = "PISTA MOLHADA!" if dados_clima["chuva"] else "GRID ALINHADO NA RETA!"
+            msg2 = "LARGADA AUTORIZADA!"
+        elif volta_atual < voltas_alvo:
+            msg1 = f"DISPUTA INTENSA NA VOLTA {volta_atual}!"
+            msg2 = f"{lider['sigla']} LIDERA O PELOTAO NA FRENTE!"
+        else:
+            msg1 = f"VOLTA FINAL ({voltas_alvo}/{voltas_alvo})!"
+            msg2 = f"TUDO DECIDIDO EM {titulo_circuito}!"
+
+        od.text((85, 1605), msg1, font=font_legenda, fill=(255, 225, 60, 255))
+        od.text((85, 1660), msg2, font=font_legenda, fill=(255, 255, 255, 255))
+
+        final_img = Image.alpha_composite(frame, overlay).convert("RGB")
+        frames.append(np.asarray(final_img, dtype=np.uint8))
+
+    return frames
+
+
+st.title("Gerador de Corridas F1 2D Dinâmico (MP4)")
+st.caption("Temporada 2026 • 23 circuitos • 22 carros • Câmara dinâmica • 1080x1920")
+
+circuito_nome = st.selectbox("Circuito", list(CIRCUITOS_2026.keys()))
+info_circuito = dict(CIRCUITOS_2026[circuito_nome])
+
+opcao_haas = st.selectbox("Dupla da Haas", list(PILOTOS_HAAS_OPCOES.keys()))
+grid_22 = montar_grid_22(opcao_haas)
+
+col1, col2 = st.columns(2)
+with col1:
+    voltas = st.number_input(
+        "Voltas simuladas",
+        min_value=1,
+        max_value=80,
+        value=min(3, info_circuito["voltas_padrao"]),
+    )
+    duracao = st.slider("Duração do vídeo (seg)", min_value=5, max_value=36, value=12)
+
+with col2:
+    clima = st.selectbox("Clima", list(CLIMAS_DB.keys()), index=1)
+    fps = st.selectbox("FPS", [15, 24], index=0)
+
+siglas_grid = [p["sigla"] for p in grid_22]
+vencedor = st.selectbox("Vencedor simulado", siglas_grid, index=0)
+
+if st.button("Gerar MP4", type="primary"):
+    with st.spinner("Renderizando frames dinâmicos e montando o MP4..."):
+        frames = renderizar_frames_dinamicos(
+            titulo_circuito=info_circuito["titulo"],
+            pontos_norm=info_circuito["pontos_norm"],
+            grid_22=grid_22,
+            voltas_alvo=int(voltas),
+            duracao=int(duracao),
+            fps=int(fps),
+            clima_nome=clima,
+            vencedor_sigla=vencedor,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+            caminho_mp4 = tmp.name
+
+        try:
+            clip = ImageSequenceClip(frames, fps=int(fps))
+            clip.write_videofile(
+                caminho_mp4,
+                codec="libx264",
+                audio=False,
+                logger=None,
+            )
+            clip.close()
+
+            with open(caminho_mp4, "rb") as f:
+                video_bytes = f.read()
+
+            st.success("Vídeo MP4 gerado com sucesso!")
+            st.video(video_bytes)
+            st.download_button(
+                label="Baixar MP4",
+                data=video_bytes,
+                file_name=f"f1_2026_{circuito_nome.lower().replace(' ', '_')}.mp4",
+                mime="video/mp4",
+            )
+        finally:
+            if os.path.exists(caminho_mp4):
+                os.remove(caminho_mp4)
