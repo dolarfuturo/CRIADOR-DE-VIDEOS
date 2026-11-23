@@ -1,7 +1,16 @@
 import math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import VideoClip
+
+try:
+    from moviepy import VideoClip
+except ImportError:
+    from moviepy.editor import VideoClip
+
+try:
+    RESAMPLE_BICUBIC = Image.Resampling.BICUBIC
+except AttributeError:
+    RESAMPLE_BICUBIC = Image.BICUBIC
 
 PILOTOS_DB = {
     "VER": {"nome": "Verstappen", "equipe": "Red Bull",     "cor": (30, 65, 175),  "detalhe": (235, 30, 45)},
@@ -348,7 +357,7 @@ def gerar_video_corrida(
                     od.ellipse((bx - raio_spray, by - raio_spray, bx + raio_spray, by + raio_spray),
                                fill=(220, 235, 250, alpha_spray))
 
-            rot_sprite = ec["sprite"].rotate(ec["ang_deg"], expand=True, resample=Image.BICUBIC)
+            rot_sprite = ec["sprite"].rotate(ec["ang_deg"], expand=True, resample=RESAMPLE_BICUBIC)
             frame.paste(rot_sprite,
                         (int(sx_centro - rot_sprite.width // 2), int(sy_centro - rot_sprite.height // 2)),
                         rot_sprite)
