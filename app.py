@@ -614,4 +614,51 @@ def renderizar_frames_dinamicos(
             od.rectangle([60, py_row + 4, 74, py_row + 22], fill=r["cor"] + (255,))
             od.text(
                 (84, py_row),
-                f"{
+                f"{pos + 1}. {r['sigla']}  {gap_txt}  {int(round(r['kmh']))}km/h",
+                font=font_placar,
+                fill=(245, 245, 245, 255),
+            )
+
+        if t < tempo_luzes + 0.8:
+            od.rounded_rectangle([455, 145, 1035, 245], radius=20, fill=(15, 15, 20, 235))
+            luzes = min(5, int((t / max(tempo_luzes * 0.8, 0.1)) * 5) + 1) if t < tempo_luzes else 0
+            for lz in range(5):
+                lx = 515 + lz * 105
+                cor_l = (240, 25, 25, 255) if lz < luzes else (55, 55, 60, 255)
+                od.ellipse((lx - 24, 195 - 24, lx + 24, 195 + 24), fill=cor_l)
+
+        od.rounded_rectangle([50, 1580, 1030, 1735], radius=22, fill=(10, 12, 18, 225))
+        if t < tempo_luzes:
+            msg1 = "PISTA MOLHADA!" if dados_clima["chuva"] else "GRID ALINHADO NA RETA!"
+            msg2 = "LARGADA AUTORIZADA!"
+        elif alerta_lance:
+            msg1 = alerta_lance
+            msg2 = f"{lider['sigla']} NA LIDERANCA • VOLTA {volta_atual}/{voltas_alvo}"
+        elif volta_atual == voltas_alvo:
+            msg1 = f"ULTIMA VOLTA ({voltas_alvo}/{voltas_alvo})!"
+            msg2 = f"{lider['sigla']} BUSCA A VITORIA EM {titulo_circuito}!"
+        else:
+            msg1 = f"DISPUTA INTENSA NA VOLTA {volta_atual}!"
+            msg2 = f"{lider['sigla']} LIDERA O PELOTAO NA FRENTE!"
+
+        od.text((85, 1605), msg1, font=font_legenda, fill=(255, 225, 60, 255))
+        od.text((85, 1660), msg2, font=font_legenda, fill=(255, 255, 255, 255))
+
+        final_img = Image.alpha_composite(frame, overlay).convert("RGB")
+        frames.append(np.asarray(final_img, dtype=np.uint8))
+
+    return frames
+
+
+st.title("Gerador de Corridas F1 2D Dinâmico (MP4)")
+st.caption("Temporada 2026 • 23 circuitos • 22 carros • Rastros, Telemetria e Legendas • 1080x1920")
+
+circuito_nome = st.selectbox("Circuito", list(CIRCUITOS_2026.keys()))
+info_circuito = dict(CIRCUITOS_2026[circuito_nome])
+
+opcao_haas = st.selectbox("Dupla da Haas", list(PILOTOS_HAAS_OPCOES.keys()))
+grid_22 = montar_grid_22(opcao_haas)
+
+col1, col2 = st.columns(2)
+with col1:
+    voltas = st.number_input(
